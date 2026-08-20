@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Computational Linguistics with Python — Tests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- terminal status band ---------------------------------------------------->
+<div class="band" id="band">
+  <span class="dot"></span>
+  <span id="bandText">ready</span>
+  <span class="band-right">
+    <button class="band-btn" id="themeBtn" title="Light or dark">theme</button>
+    <button class="band-btn" id="soundBtn" title="Sound on or off">sound</button>
+    <button class="band-btn" id="helpBtn" title="Keyboard shortcuts">keys</button>
+  </span>
+</div>
+
+<header class="top">
+  <div class="wrap top-in">
+    <div class="brand">
+      <span class="mark">2C1P</span>
+      <span class="course">Computational Linguistics with Python</span>
+    </div>
+    <div class="who" id="who" hidden>
+      <span id="whoName"></span>
+      <button class="ghost" id="signOut">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="main">
+
+<!-- 1. sign in -------------------------------------------------------------->
+<section class="screen" id="scSignin">
+  <div class="split">
+    <div>
+      <p class="eyebrow">Course tests</p>
+      <h1 class="display">Write it.<br>Run it.<br>Prove it.</h1>
+      <p class="lede">Six tests, ten questions each. Eight to answer, two to write. Your code runs on real Python — indentation included.</p>
+      <div class="card signin">
+        <label for="phone">Your phone number</label>
+        <input id="phone" inputmode="numeric" autocomplete="tel" placeholder="03xx xxxxxxx">
+        <button class="primary" id="signInBtn">Sign in</button>
+        <p class="err" id="signinErr" hidden></p>
+        <p class="fine">Use the number you enrolled with. Not on the list? Message <a id="waHelp" href="#">the instructor</a>.</p>
+      </div>
+    </div>
+    <div class="demo">
+      <div class="demo-head"><span></span><span></span><span></span> lesson.py</div>
+      <pre class="demo-code" id="demoCode"></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 2. home ----------------------------------------------------------------->
+<section class="screen" id="scHome" hidden>
+  <div class="home-head">
+    <div>
+      <p class="eyebrow">Your progress</p>
+      <h2 class="h2" id="homeGreeting">Welcome back</h2>
+    </div>
+    <div class="dial-box">
+      <svg class="dial" viewBox="0 0 120 120" aria-hidden="true">
+        <circle cx="60" cy="60" r="52" class="dial-bg"></circle>
+        <circle cx="60" cy="60" r="52" class="dial-fg" id="dialFg"></circle>
+      </svg>
+      <div class="dial-num"><strong id="dialPct">0%</strong><span>overall</span></div>
+    </div>
+  </div>
+
+  <div class="stats" id="homeStats"></div>
+  <div class="tests" id="testList"></div>
+
+  <div class="two-col">
+    <div class="card" id="badgeCard">
+      <h3 class="h3">Badges</h3>
+      <div class="badges" id="badgeGrid"></div>
+    </div>
+    <div class="card" id="practiceCard">
+      <h3 class="h3">Practice console</h3>
+      <p class="fine">Open all day. Nothing here is marked. Ctrl+Enter runs your code.</p>
+      <div id="practiceHost"></div>
+      <div class="row">
+        <button class="primary sm" id="practiceRun">Run code</button>
+        <button class="ghost sm" id="practiceFix">Fix indentation</button>
+        <button class="ghost sm" id="practiceClear">Clear</button>
+      </div>
+      <div class="problems" id="practiceProblems"></div>
+      <pre class="out" id="practiceOut"></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 3. test ----------------------------------------------------------------->
+<section class="screen" id="scTest" hidden>
+  <div class="ribbon">
+    <span class="ribbon-test" id="ribTest">Test</span>
+    <span class="ribbon-count"><b id="ribNow">1</b><i>/</i><span id="ribTotal">10</span></span>
+    <span class="ribbon-time" id="ribTime">25:00</span>
+    <span class="ribbon-score">Score <b id="ribScore">0</b></span>
+  </div>
+
+  <article class="qcard">
+    <p class="eyebrow" id="qKind">Multiple choice</p>
+    <div class="qtext" id="qText"></div>
+
+    <div id="mcqBox">
+      <div class="options" id="options"></div>
+    </div>
+
+    <div id="codeBox" hidden>
+      <div class="brief" id="codeBrief"></div>
+      <div id="editorHost"></div>
+      <div class="row">
+        <button class="ghost sm" id="runBtn">Run code</button>
+        <button class="ghost sm" id="fixBtn">Fix indentation</button>
+        <button class="ghost sm" id="resetBtn">Reset to starter</button>
+      </div>
+      <div class="problems" id="problems"></div>
+      <pre class="out" id="codeOut"></pre>
+      <div class="cases" id="cases"></div>
+    </div>
+
+    <div class="verdict" id="verdict" hidden></div>
+
+    <div class="qfoot">
+      <button class="ghost" id="hintBtn">Show hint</button>
+      <span class="attempts" id="attempts"></span>
+      <button class="primary" id="submitBtn">Submit answer</button>
+      <button class="primary" id="nextBtn" hidden>Next question</button>
+    </div>
+  </article>
+</section>
+
+<!-- 4. result --------------------------------------------------------------->
+<section class="screen" id="scResult" hidden>
+  <div class="result-head" id="resultHead"></div>
+  <div class="two-col">
+    <div class="card">
+      <h3 class="h3">Answer by answer</h3>
+      <div class="ledger" id="ledger"></div>
+    </div>
+    <div class="card">
+      <h3 class="h3">Send your result</h3>
+      <p class="fine">This site keeps your score in this browser. Send the code below so it reaches the instructor.</p>
+      <textarea class="codebox" id="resultCode" readonly rows="4"></textarea>
+      <div class="row">
+        <button class="primary sm" id="waSend">Send on WhatsApp</button>
+        <button class="ghost sm" id="copyCode">Copy code</button>
+        <button class="ghost sm" id="dlReport">Download report</button>
+      </div>
+      <div id="certBox" hidden>
+        <h3 class="h3">Certificate</h3>
+        <canvas id="cert" width="1200" height="850"></canvas>
+        <button class="primary sm" id="dlCert">Download certificate</button>
+      </div>
+    </div>
+  </div>
+  <button class="ghost" id="backHome">Back to tests</button>
+</section>
+
+<!-- 5. admin ---------------------------------------------------------------->
+<section class="screen" id="scAdmin" hidden>
+  <div class="admin-gate card" id="adminGate">
+    <h2 class="h2">Instructor area</h2>
+    <label for="adminPass">Password</label>
+    <input id="adminPass" type="password" autocomplete="off">
+    <button class="primary" id="adminGo">Open</button>
+    <p class="err" id="adminErr" hidden></p>
+  </div>
+  <div id="adminPanel" hidden>
+    <div class="tabs" id="adminTabs">
+      <button class="tab on" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="results">Results</button>
+      <button class="tab" data-tab="students">Students</button>
+      <button class="tab" data-tab="attendance">Attendance</button>
+      <button class="tab" data-tab="questions">Questions</button>
+      <button class="tab" data-tab="settings">Settings</button>
+    </div>
+    <div class="tabbody" id="adminBody"></div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span id="footInstructor"></span>
+    <span class="foot-mid" id="footWindow"></span>
+    <button class="ghost sm" id="adminHint">Instructor</button>
+  </div>
+</footer>
+
+<!-- modal ------------------------------------------------------------------->
+<div class="modal" id="modal" hidden>
+  <div class="modal-card">
+    <h3 id="modalTitle">Are you sure?</h3>
+    <p id="modalBody"></p>
+    <div class="row end">
+      <button class="ghost" id="modalNo">Go back</button>
+      <button class="primary" id="modalYes">Yes, submit</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+<canvas class="confetti" id="confetti" hidden></canvas>
+
+<script src="data.js"></script>
+<script src="editor.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
