@@ -1,11 +1,18 @@
 /* ============================================================
    app.js — screens, test flow, marking, admin.
    ============================================================ */
-const KEY = "twoc1p_v4";
+const KEY = "twoc1p_v5_email";
 const $ = (id) => document.getElementById(id);
 const el = (sel) => document.querySelector(sel);
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const digits = (s) => String(s || "").replace(/\D/g, "").replace(/^92/, "0").replace(/^0?3/, "03");
+const normalizeEmail = (s) => String(s || "").trim().toLowerCase();
+const isValidEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(s));
+const studentName = (s) => {
+  if (s && s.name) return s.name;
+  const local = normalizeEmail(s && s.email).split("@")[0] || "Student";
+  return local.replace(/[._-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 let S = load();
 let editor = null, practice = null, run = null, timer = null;
@@ -88,7 +95,7 @@ function boot() {
   $("helpBtn").onclick = () => ask("Keyboard shortcuts",
     "Tab indents four spaces · Shift+Tab removes them · Enter keeps your indent and adds one level after a colon · Ctrl+/ comments a line · Ctrl+Enter runs your code.", () => {});
   $("signInBtn").onclick = signIn;
-  $("phone").addEventListener("keydown", (e) => e.key === "Enter" && signIn());
+  $("email").addEventListener("keydown", (e) => e.key === "Enter" && signIn());
   $("signOut").onclick = () => ask("Sign out?", "Your scores stay in this browser.", () => { S.student = null; S.current = null; save(); render(); });
   $("backHome").onclick = render;
   $("adminHint").onclick = openAdmin;
@@ -140,13 +147,29 @@ function typeDemo() {
 
 /* ---------- sign in ----------------------------------------- */
 function signIn() {
-  const p = digits($("phone").value);
-  const hit = ROSTER.find((r) => digits(r.phone) === p);
+  const email = normalizeEmail($("email").value);
   const err = $("signinErr");
-  if (!p) { err.hidden = false; err.textContent = "Type your phone number to sign in."; return; }
-  if (!hit) { err.hidden = false; err.textContent = "That number is not on the class list. Check the digits, or message the instructor."; return; }
+
+  if (!email) {
+    err.hidden = false;
+    err.textContent = "Type your email address to sign in.";
+    return;
+  }
+  if (!isValidEmail(email)) {
+    err.hidden = false;
+    err.textContent = "Enter a valid email address.";
+    return;
+  }
+
+  const hit = ROSTER.find((r) => normalizeEmail(r.email) === email);
+  if (!hit) {
+    err.hidden = false;
+    err.textContent = "This email is not on the class list. Check the address, or message the instructor.";
+    return;
+  }
+
   err.hidden = true;
-  S.student = { name: hit.name, phone: p };
+  S.student = { name: studentName(hit), email };
   save(); beep("ok"); render();
 }
 
@@ -154,14 +177,14 @@ function signIn() {
 function render() {
   $("who").hidden = !S.student;
   if (!S.student) return show("scSignin");
-  $("whoName").textContent = S.student.name;
+  $("whoName").textContent = studentName(S.student);
   if (S.current) return renderQuestion();
   renderHome();
 }
 
 function renderHome() {
   show("scHome");
-  $("homeGreeting").textContent = `Hello, ${S.student.name.split(" ")[0]}`;
+  $("homeGreeting").textContent = `Hello, ${studentName(S.student).split(" ")[0]}`;
   const done = BANK.filter((t) => S.tests[t.id]);
   const earned = done.reduce((a, t) => a + S.tests[t.id].score, 0);
   const possible = done.reduce((a, t) => a + maxScore(t), 0);
@@ -505,10 +528,10 @@ function showResult(id) {
   $("resultCode").value = code;
   $("copyCode").onclick = () => { navigator.clipboard.writeText(code); toast("Result code copied"); };
   $("waSend").onclick = () => {
-    const msg = `2C1P result — ${S.student.name} — ${r.title} — ${r.score}/${r.max} (${pct}%)\n\nCode:\n${code}`;
+    const msg = `2C1P result — ${studentName(S.student)} — ${r.title} — ${r.score}/${r.max} (${pct}%)\n\nCode:\n${code}`;
     window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(msg)}`, "_blank");
   };
-  $("dlReport").onclick = () => download(`${S.student.name} - ${r.title}.txt`, reportText(r, pct));
+  $("dlReport").onclick = () => download(`${studentName(S.student)} - ${r.title}.txt`, reportText(r, pct));
 
   const all = BANK.every((t) => S.tests[t.id]);
   const overall = all ? Math.round((BANK.reduce((a, t) => a + S.tests[t.id].score, 0) / BANK.reduce((a, t) => a + maxScore(t), 0)) * 100) : 0;
@@ -518,7 +541,7 @@ function showResult(id) {
 }
 
 function resultCode(r) {
-  const payload = { n: S.student.name, p: S.student.phone, t: r.testId, s: r.score, m: r.max, f: r.finishedAt, x: r.tabSwitches, o: r.timedOut ? 1 : 0 };
+  const payload = { n: studentName(S.student), p: S.student.email, t: r.testId, s: r.score, m: r.max, f: r.finishedAt, x: r.tabSwitches, o: r.timedOut ? 1 : 0 };
   const json = JSON.stringify(payload);
   let h = 0;
   for (let i = 0; i < json.length; i++) h = (h * 31 + json.charCodeAt(i)) >>> 0;
@@ -535,7 +558,7 @@ function readCode(code) {
 function reportText(r, pct) {
   return [
     CONFIG.courseName, "Test report", "",
-    `Student : ${S.student.name} (${S.student.phone})`,
+    `Student : ${studentName(S.student)} (${S.student.email})`,
     `Test    : ${r.title}`,
     `Score   : ${r.score}/${r.max} (${pct}%)`,
     `Finished: ${new Date(r.finishedAt).toLocaleString()}`, "",
@@ -551,7 +574,7 @@ function download(name, text) {
 function downloadCanvas() {
   const a = document.createElement("a");
   a.href = $("cert").toDataURL("image/png");
-  a.download = `${S.student.name} - certificate.png`; a.click();
+  a.download = `${studentName(S.student)} - certificate.png`; a.click();
 }
 
 function drawCert(pct) {
@@ -563,7 +586,7 @@ function drawCert(pct) {
   x.font = "400 26px Archivo, sans-serif"; x.fillText("2C1P", 600, 130);
   x.font = "400 58px Anton, Impact, sans-serif"; x.fillText("CERTIFICATE OF COMPLETION", 600, 210);
   x.font = "400 20px Archivo, sans-serif"; x.fillText("This certifies that", 600, 290);
-  x.font = "400 62px Anton, Impact, sans-serif"; x.fillText(S.student.name, 600, 372);
+  x.font = "400 62px Anton, Impact, sans-serif"; x.fillText(studentName(S.student), 600, 372);
   x.font = "400 20px Archivo, sans-serif";
   x.fillText("has completed all six assessments of", 600, 430);
   x.font = "600 30px Archivo, sans-serif"; x.fillText(CONFIG.courseName, 600, 478);
@@ -574,7 +597,7 @@ function drawCert(pct) {
   x.fillText(CONFIG.instructor, 600, 700);
   x.font = "400 15px IBM Plex Mono, monospace"; x.fillStyle = "#5d6880";
   x.fillText("Instructor", 600, 726);
-  const serial = "2C1P-" + btoa(S.student.phone).replace(/=/g, "").slice(0, 8).toUpperCase();
+  const serial = "2C1P-" + btoa(S.student.email).replace(/=/g, "").slice(0, 8).toUpperCase();
   x.fillText(`${serial} · ${new Date().toLocaleDateString()}`, 600, 782);
 }
 
@@ -693,7 +716,7 @@ function adminResults(b) {
     }
   };
   $("csvBtn").onclick = () => {
-    const rows = [["Name", "Phone", "Test", "Score", "Max", "Percent", "Finished", "TabSwitches", "TimedOut"]]
+    const rows = [["Name", "Email", "Test", "Score", "Max", "Percent", "Finished", "TabSwitches", "TimedOut"]]
       .concat(results().map((r) => [r.n, r.p, (testById(r.t) || {}).title || r.t, r.s, r.m,
         Math.round((r.s / r.m) * 100), new Date(r.f).toISOString(), r.x || 0, r.o ? "yes" : "no"]));
     download("results.csv", rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n"));
@@ -704,28 +727,28 @@ function adminResults(b) {
 function adminStudents(b) {
   const rs = results();
   b.innerHTML = `
-    <table><thead><tr><th>#</th><th>Name</th><th>Phone</th><th class="num">Tests done</th><th class="num">Average</th><th></th></tr></thead><tbody>
+    <table><thead><tr><th>#</th><th>Student</th><th>Email</th><th class="num">Tests done</th><th class="num">Average</th></tr></thead><tbody>
     ${ROSTER.map((s, i) => {
-      const mine = rs.filter((r) => digits(r.p) === digits(s.phone));
+      const email = normalizeEmail(s.email);
+      const mine = rs.filter((r) => normalizeEmail(r.p) === email);
       const avg = mine.length ? Math.round(mine.reduce((a, r) => a + (r.s / r.m) * 100, 0) / mine.length) : 0;
-      return `<tr><td class="num">${i + 1}</td><td>${esc(s.name)}</td><td>${esc(s.phone)}</td>
-        <td class="num">${mine.length}/${BANK.length}</td><td class="num">${mine.length ? avg + "%" : "—"}</td>
-        <td><a class="pill" target="_blank" href="https://wa.me/${digits(s.phone).replace(/^0/, "92")}?text=${encodeURIComponent("Reminder: your " + CONFIG.courseName + " test is open tonight after 7 PM.")}">nudge</a></td></tr>`;
+      return `<tr><td class="num">${i + 1}</td><td>${esc(studentName(s))}</td><td>${esc(email)}</td>
+        <td class="num">${mine.length}/${BANK.length}</td><td class="num">${mine.length ? avg + "%" : "—"}</td></tr>`;
     }).join("")}
     </tbody></table>
     <div class="adminform" style="margin-top:18px">
-      <label for="rosterPaste">Replace the class list — one per line, as <code>Name, 03xxxxxxxxx</code></label>
-      <textarea id="rosterPaste" rows="5" placeholder="Ayesha Khan, 03001234567"></textarea>
+      <label for="rosterPaste">Replace the class list — one email per line</label>
+      <textarea id="rosterPaste" rows="5" placeholder="student@example.com"></textarea>
       <button class="primary sm" id="rosterBtn">Build the new list</button>
-      <p class="fine">This gives you the lines to paste into data.js — the file itself is not written by the browser.</p>
+      <p class="fine">Invalid or duplicate emails are skipped. This gives you the lines to paste into data.js — the file itself is not written by the browser.</p>
       <textarea id="rosterOut" rows="6" class="codebox" hidden></textarea>
     </div>`;
   $("rosterBtn").onclick = () => {
-    const rows = $("rosterPaste").value.split("\n").map((l) => l.split(",")).filter((p) => p.length >= 2);
-    const out = "const ROSTER = [\n" + rows.map((p) =>
-      `  { name: ${JSON.stringify(p[0].trim())}, phone: ${JSON.stringify(digits(p[1]))} },`).join("\n") + "\n];";
+    const emails = [...new Set($("rosterPaste").value.split("\\n").map(normalizeEmail).filter(isValidEmail))];
+    const out = "const ROSTER = [\\n" + emails.map((email) =>
+      `  { email: ${JSON.stringify(email)} },`).join("\\n") + "\\n];";
     const t = $("rosterOut"); t.hidden = false; t.value = out; t.select();
-    toast("Copy this into data.js");
+    toast(`${emails.length} valid email${emails.length === 1 ? "" : "s"} prepared`);
   };
 }
 
@@ -738,10 +761,10 @@ function adminAttendance(b) {
     <div class="att"><table><thead><tr><th>Student</th>
       ${dates.map((d, i) => `<th title="${d}">${i + 1}</th>`).join("")}<th class="num">%</th></tr></thead><tbody>
     ${ROSTER.map((s) => {
-      const key = digits(s.phone);
+      const key = normalizeEmail(s.email);
       const row = att[key] || (att[key] = {});
       const n = Object.values(row).filter(Boolean).length;
-      return `<tr><td>${esc(s.name)}</td>${dates.map((d, i) =>
+      return `<tr><td>${esc(studentName(s))}</td>${dates.map((d, i) =>
         `<td><input type="checkbox" data-s="${key}" data-d="${i}" ${row[i] ? "checked" : ""}></td>`).join("")}
         <td class="num">${Math.round((n / dates.length) * 100)}%</td></tr>`;
     }).join("")}
@@ -750,11 +773,11 @@ function adminAttendance(b) {
     c.onchange = () => { S.attendance[c.dataset.s][c.dataset.d] = c.checked; save(); };
   });
   $("attCsv").onclick = () => {
-    const rows = [["Name", "Phone", ...dates, "Present", "Percent"]].concat(ROSTER.map((s) => {
-      const row = S.attendance[digits(s.phone)] || {};
+    const rows = [["Name", "Email", ...dates, "Present", "Percent"]].concat(ROSTER.map((s) => {
+      const row = S.attendance[normalizeEmail(s.email)] || {};
       const marks = dates.map((_, i) => (row[i] ? "P" : "A"));
       const n = marks.filter((m) => m === "P").length;
-      return [s.name, s.phone, ...marks, n, Math.round((n / dates.length) * 100) + "%"];
+      return [studentName(s), s.email, ...marks, n, Math.round((n / dates.length) * 100) + "%"];
     }));
     download("attendance.csv", rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n"));
   };
