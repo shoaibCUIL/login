@@ -12,9 +12,9 @@ const CONFIG = {
   whatsapp: "923414763186",          // digits only, no + and no spaces
 
   // --- access window (Pakistan time) -------------------------
-  windowOpenHour: 19,                // 7 PM
+  windowOpenHour: 0,                // 7 PM
   windowCloseHour: 24,               // midnight
-  enforceWindow: true,               // set false to test at any hour
+  enforceWindow: false,               // set false to test at any hour
 
   // --- marking ----------------------------------------------
   passPercent: 70,
