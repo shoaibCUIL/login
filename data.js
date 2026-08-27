@@ -52,6 +52,7 @@ const CONFIG = {
    ------------------------------------------------------------ */
 const ROSTER = [
   { email: "noshababano10@gmail.com" },
+  { email: "shoaibtahir410@gmail.com" },
   { email: "nimranimrabashir@gmail.com"},
   { email: "luqmananzoor875@gmail.com" },
   { email: "zunairanaseem001@gmail.com" },
